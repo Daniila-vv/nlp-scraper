@@ -1,4 +1,5 @@
-echo ".DS_Store" >> .gitignore
-echo ".venv/" >> .gitignore
-echo "__pycache__/" >> .gitignore
-echo "*.pyc" >> .gitignore
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+
