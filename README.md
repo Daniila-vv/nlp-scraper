@@ -24,19 +24,22 @@ The goal of this project is to build an NLP-enriched platform for news analysis.
 
 2.	Set up a virtual environment and install dependencies:
 
-    ```python -m venv .venv
+    ``` 
+    python -m venv .venv
     source .venv/bin/activate  # For Windows use .venv\Scripts\activate
     pip install -r requirements.txt
     ```
 
 3.	Run the scraper to gather news articles:
 
-    ```python scraper_news.py
+    ```
+    python scraper_news.py
     ```
 
 4.	Process the collected articles:
 
-    ```python nlp_enriched_news.py
+    ```
+    python nlp_enriched_news.py
     ```
 
 ## Analysis Overview
