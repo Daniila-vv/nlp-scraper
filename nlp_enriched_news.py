@@ -10,33 +10,33 @@ from nltk.sentiment import SentimentIntensityAnalyzer
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from gensim.models import KeyedVectors  # Импортируем KeyedVectors для работы с Word2Vec
+from gensim.models import KeyedVectors  # Import KeyedVectors to work with Word2Vec
 
-# Загружаем модель SpaCy для обнаружения сущностей
+# Loading the SpaCy model for entity detection
 nlp = spacy.load("en_core_web_sm")
 
-# Загружаем предобученный анализатор настроений
+#Loading a pre-trained sentiment analyzer
 nltk.download('vader_lexicon')
 sia = SentimentIntensityAnalyzer()
 
-# Функция для загрузки модели Word2Vec
+# Function to load Word2Vec model
 def load_word2vec_model():
     model = KeyedVectors.load_word2vec_format('results/GoogleNews-vectors-negative300.bin', binary=True)  # Укажите путь к модели
     return model
 
-# Загружаем размеченные данные для классификации темы
+# Loading tagged data for topic classification
 def load_topic_data():
     train_data = pd.read_csv('data/bbc_news_train.txt', sep=',', header=0, names=['ArticleId', 'Text', 'Category'])
     test_data = pd.read_csv('data/bbc_news_tests.txt', sep=',', header=0, names=['ArticleId', 'Text', 'Category'])
     return train_data, test_data
 
-# Предобработка текста для классификации темы
+# Preprocessing text for topic classification
 def preprocess_text(text):
     text = text.lower()
     text = ''.join(char for char in text if char.isalnum() or char.isspace())
     return text
 
-# Обучение классификатора тем
+# Training a Topic Classifier
 def train_topic_classifier(train_data):
     vectorizer = CountVectorizer(preprocessor=preprocess_text)
     X_train = vectorizer.fit_transform(train_data['Text'])
@@ -48,7 +48,7 @@ def train_topic_classifier(train_data):
     joblib.dump(clf, 'results/topic_classifier.pkl')
     joblib.dump(vectorizer, 'results/vectorizer.pkl')
 
-    # Оценка модели и создание графика
+    # Model evaluation and graph creation
     train_accuracy = []
     test_accuracy = []
 
@@ -59,7 +59,7 @@ def train_topic_classifier(train_data):
         train_accuracy.append(clf.score(X_train_sub, y_train_sub))
         test_accuracy.append(clf.score(X_test, y_test))
 
-    # Строим график
+   # Building a graph
     plt.figure(figsize=(10, 6))
     plt.plot(range(1, 11), train_accuracy, label='Train Accuracy', marker='o')
     plt.plot(range(1, 11), test_accuracy, label='Test Accuracy', marker='o')
@@ -70,25 +70,25 @@ def train_topic_classifier(train_data):
     plt.grid()
     plt.savefig('results/learning_curves.png')
 
-# Обнаружение сущностей в статье
+# Detecting entities in an article
 def detect_entities(article):
     doc = nlp(article)
     companies = [ent.text for ent in doc.ents if ent.label_ == "ORG"]
     return companies
 
-# Определение темы статьи
+# Defining the topic of the article
 def detect_topic(article, vectorizer, clf):
     X = vectorizer.transform([article])
     topic = clf.predict(X)[0]
     return topic
 
-# Проведение анализа настроений
+# Conducting sentiment analysis
 def analyze_sentiment(article):
     score = sia.polarity_scores(article)
     sentiment = score['compound']
     return sentiment
 
-# Вычисление расстояния скандала на основе Word2Vec
+# Scandal Distance Calculation Based on Word2Vec
 def calculate_scandal_distance(article, keywords, model):
     distances = []
     article_vector = np.mean([model[word] for word in article.lower().split() if word in model.key_to_index], axis=0)
@@ -104,11 +104,11 @@ def calculate_scandal_distance(article, keywords, model):
 def process_articles(articles, model):
     results = []
 
-    # Загружаем классификатор тем
+   # Loading the topic classifier
     clf = joblib.load('results/topic_classifier.pkl')
     vectorizer = joblib.load('results/vectorizer.pkl')
 
-    # Определяем ключевые слова, связанные со скандалом
+   # Identifying keywords associated with the scandal
     scandal_keywords = [
         'pollution', 'air pollution', 'water pollution', 'soil pollution', 'plastic pollution',
         'industrial waste', 'hazardous waste', 'chemical spills', 'toxic waste', 'sewage contamination',
@@ -131,22 +131,22 @@ def process_articles(articles, model):
     for index, row in tqdm(articles.iterrows(), total=articles.shape[0]):
         url = row['url']
         date = row['date']
-        headline = row['headline'] if pd.notna(row['headline']) else ""  # Обрабатываем NaN
-        body = row['body'] if pd.notna(row['body']) else ""  # Обрабатываем NaN
+        headline = row['headline'] if pd.notna(row['headline']) else ""  # NaN
+        body = row['body'] if pd.notna(row['body']) else ""  #  NaN
 
-        # Обнаружение сущностей
+       # Entity Detection
         orgs = detect_entities(headline + " " + body)
 
-        # Определение темы
+       # Definition of the topic
         topic = detect_topic(headline + " " + body, vectorizer, clf)
 
-        # Анализ настроений
+       # Sentiment Analysis
         sentiment = analyze_sentiment(headline + " " + body)
 
-        # Вычисление расстояния скандала
+        # Calculating the scandal distance
         scandal_distance = calculate_scandal_distance(headline + " " + body, scandal_keywords, model)
 
-        # Сохранение результатов
+       # Saving results
         results.append({
             'unique_id': index,
             'url': url,
@@ -157,27 +157,27 @@ def process_articles(articles, model):
             'topic': topic,
             'sentiment': sentiment,
             'scandal_distance': scandal_distance,
-            'top_10': False  # Место для логики топ 10
+            'top_10': False  # Place for logic top 10
         })
 
-    # Преобразуем результаты в DataFrame
+    # Convert the results to a DataFrame
     results_df = pd.DataFrame(results)
 
-    # Здесь можно добавить логику для фильтрации и пометки топ 10 статей на основе расстояния скандала
+    # Here you can add logic to filter and mark the top 10 articles based on scandal distance
     top_10_indices = results_df.nsmallest(10, 'scandal_distance').index
     results_df.loc[top_10_indices, 'top_10'] = True
 
-    # Сохраняем обогащенные данные в CSV файл
+  # Save enriched data to CSV file
     results_df.to_csv('results/enhanced_news.csv', index=False)
 
 if __name__ == "__main__":
-    # Загружаем данные для обучения
-    train_data, test_data = load_topic_data()  # Загружаем данные для обучения
-    train_topic_classifier(train_data)  # Обучаем классификатор на тренировочных данных
+   # Loading data for training
+    train_data, test_data = load_topic_data()  
+    train_topic_classifier(train_data)  # Train the classifier on training data
 
-    # Загружаем предобученную модель Word2Vec
-    word2vec_model = load_word2vec_model()  # Укажите путь к вашей модели Word2Vec
+  # Load the pre-trained Word2Vec model
+    word2vec_model = load_word2vec_model()  
 
-    # Загружаем статьи из CSV
-    articles = pd.read_csv('data/guardian_articles.csv')  # Настройте путь по мере необходимости
+    # Loading articles from CSV
+    articles = pd.read_csv('data/guardian_articles.csv')  
     process_articles(articles, word2vec_model)

@@ -4,4 +4,4 @@ __pycache__/
 *.pyc
 results/*.bin
 results/*.pkl
-results/*.png
+

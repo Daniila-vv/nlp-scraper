@@ -66,9 +66,9 @@ def fetch_news():
                 if href and 'theguardian.com' in href and len(text) > 20:
                     article_text = fetch_article_text(href)
                     articles.append({
-                        'id': str(uuid.uuid4()),  # Генерация уникального ID
+                        'id': str(uuid.uuid4()),  # Generate a unique ID
                         'url': href,
-                        'date': datetime.now().date(),  # Сохранение текущей даты
+                        'date': datetime.now().date(),  # Save current date
                         'headline': text,
                         'body': article_text
                     })
@@ -76,9 +76,9 @@ def fetch_news():
         else:
             print(f"Ошибка при загрузке {url} - статус: {response.status_code}")
 
-    # Создание DataFrame
+    # Creating a DataFrame
     news_df = pd.DataFrame(articles)
-    # Удаление дубликатов по уникальному ID
+    # Remove duplicates by unique ID
     news_df = news_df.drop_duplicates(subset=['id'])  
     news_df.to_csv('data/guardian_articles.csv', index=False)
     print(f"Количество загруженных статей: {len(news_df)}")
@@ -97,5 +97,5 @@ def fetch_article_text(url):
     return ' '.join([para.get_text() for para in paragraphs])
 
 
-# Запуск скрипта
+# Run the script
 news_df = fetch_news()
